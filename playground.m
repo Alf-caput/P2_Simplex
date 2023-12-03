@@ -1,16 +1,28 @@
 clear, clc
-c = [5, 4, 3, 1];
+% c = [5, 4, 3, 1];
+% A = [
+%     1, 1, 1, 1;
+%     3, 2, 3, 1;
+%     2, 1, 1, 4
+% ];
+% b = [
+%     12;
+%     5;
+%     7
+% ];
+c = [2, 1];
 A = [
-    1, 1, 1, 1;
-    3, 2, 3, 1;
-    2, 1, 1, 4
+    3, -1;
+    -2, 1;
 ];
 b = [
-    12;
-    5;
-    7
+    6;
+    3;
 ];
-[x, z] = simplex(c, A, b)
+[x, z] = simplex(c, A, b);
+disp("Soluciones obtenidas")
+disp(x)
+disp(z)
 
 function [x, z] = simplex(c, A, b)
 % Función que calcula la solución al problema de programación lineal:
@@ -18,7 +30,7 @@ function [x, z] = simplex(c, A, b)
 %       Ax <= b
 %       x >= 0 para todo xi
 %       b >= 0 para todo bi
-% Mediante el algoritmo Simplex a partir de las tablas de Charles, Cooper y Henderson
+% Mediante el algoritmo Simplex a partir de las tablas de Charnes, Cooper y Henderson
 % INPUTS:
 %       A = matriz de coeficientes (matriz de restricciones)
 %       b = vector columna de recursos (término independiente restricciones)
@@ -35,10 +47,10 @@ function [x, z] = simplex(c, A, b)
 
     % Guardamos los índices de las variables que pertenecen a la base
     % Inicialmente las variables de holgura estarán en la base
-    base = m+1:m+n; % Inicialmente m variables y a estas se añaden n de holgura
+    base = m+1:m+n; % Tenemos m variables y a estas se añaden n de holgura
 
     % Con las variables de holgura el sistema Ax<=b pasa a ser Ax=b
-    % Se procede a definir la tabla de Charles, Cooper y Henderson
+    % Se procede a definir la tabla de Charnes, Cooper y Henderson
     % Esta tabla contendrá en su primera columna los valores de las variables de la base
     aij = horzcat(b, A, eye(n));
 
@@ -53,17 +65,10 @@ function [x, z] = simplex(c, A, b)
     % cj-zj inicialmente siempre igual a c al ser zj vector de ceros inicialmente
     cj_zj = cj;
     
-    if all(cj_zj<=0)
-        fprintf("ERROR: El problema planteado no tiene solución acotada\n")
-        return
-    end
-
-    fprintf("Base inicial:")
-    disp(base)
-    disp(aij)
-    disp(zj)
-    disp(cj_zj)
-    % Mientras que todos los cj-zj sean mayor que cero se repite el algoritmo
+    % Solución trivial
+    x = 0; 
+    z = 0;
+    % Mientras que todos los cj-zj sean mayores que cero se repite el algoritmo
     while any(cj_zj > 0)
         % Obtención columna pivote k
         % Se busca el valor más grande positivo de cj-zj
@@ -80,12 +85,11 @@ function [x, z] = simplex(c, A, b)
 
         % Entrará en la base la variable xk
         % Saldrá la variable con posición h en la base
+        % NOTA: Para comprobar si la solución es acotada guardamos la variable que sale
+        aux = base(h);
         base(h) = k-1;
-
-        fprintf("Pivote(%d, %d) = %.2f\n", h, k, aij(h, k))
-        fprintf("La nueva base es:")
-        disp(base)
-        % GAUSS
+        % Para obtener la siguiente tabla de Charnes, Cooper y Henderson se realiza Gauss
+        % Para obtener 1 en el pivote y 0 en el resto de componentes de la variable que entra
         for i=1:n
             for j = 1:1+m+n
                 if i==h || j==k
@@ -107,6 +111,7 @@ function [x, z] = simplex(c, A, b)
         for j=1:1+m+n
             zj(j) = cj(base)*aij(:, j);
         end
+
         % Finalmente se obtiene cj-zj
         % Que servirá para calcular el siguiente pivote o detener el algoritmo
         cj_zj = cj-zj(2:end);
@@ -117,15 +122,22 @@ function [x, z] = simplex(c, A, b)
         % En caso de obtener valores muy pequeños los sustituimos por cero
         cj_zj(abs(cj_zj)<=100*eps) = 0;
 
-        disp(aij)
-        disp(zj)
-        disp(cj_zj)
+        % Comprobamos que la solución está acotada
+        % No puede ocurrir que todos los elementos de la columna del pivote anterior sean todos positivos
+        % En ese caso la dirección no está acotada por las restricciones
+        if all(aij(:, aux+1)>0)
+            fprintf("ERROR: Se ha encontrado una dirección utilizada para optimizar no acotada\n")
+            return
+        end
     end
 
+    % Se obtiene el vector solución de todas las variables (incluyendo holgura)
     x = zeros(1, m+n);
     for i=1:length(base)
         x(base(i)) = aij(i, 1);
     end
+    % Finalmente descartamos los valores de las variables de holgura, para no devolverlas
     x = x(1:m);
+    % Devolvemos a su vez el valor de la función objetivo
     z = zj(1);
 end
