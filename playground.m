@@ -10,16 +10,22 @@ b = [
     5;
     7
 ];
-simplex(c, A, b)
+[x, z] = simplex(c, A, b)
 
 function [x, z] = simplex(c, A, b)
+% Función que calcula la solución al problema de programación lineal:
+%       max z = c'x
+%       Ax <= b
+%       x >= 0 para todo xi
+%       b >= 0 para todo bi
+% Mediante el algoritmo Simplex a partir de las tablas de Charles, Cooper y Henderson
 % INPUTS:
-%   A = matriz de coeficientes (matriz de restricciones)
-%   b = vector columna de recursos (término independiente restricciones)
-%   c = vector fila de costes (coeficientes función objetivo)
+%       A = matriz de coeficientes (matriz de restricciones)
+%       b = vector columna de recursos (término independiente restricciones)
+%       c = vector fila de costes (coeficientes función objetivo)
 % OUTPUTS:
-%   x = vector fila solución del problema de programación lineal
-%   z = valor de la función objetivo para la solución obtenida
+%       x = vector fila solución del problema de programación lineal
+%       z = valor de la función objetivo para la solución obtenida
 
     % Determinamos el tamaño de la matriz de restricciones
     [n, m] = size(A);
@@ -115,4 +121,11 @@ function [x, z] = simplex(c, A, b)
         disp(zj)
         disp(cj_zj)
     end
+
+    x = zeros(1, m+n);
+    for i=1:length(base)
+        x(base(i)) = aij(i, 1);
+    end
+    x = x(1:m);
+    z = zj(1);
 end
